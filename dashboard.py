@@ -1,4 +1,3 @@
-# dashboard_save.py
 import streamlit as st
 import numpy as np
 import pandas as pd 
@@ -8,9 +7,8 @@ from data_to_cov_and_returns import (
     fit_bekk_gjr, MGARCH_GJR, compute_bekk_gjr_covariances
 )
 from cov_to_weights import (strat_all_in, realized_sharpe_from_portfolio_values)
-import os
 
-st.title("Backtest CAC40 - Sauvegarde automatique")
+st.title("Backtest GJR-BEKK-GARCH yfinance - Sauvegarde auto")
 
 backtest = np.load("backtest_results.npz", allow_pickle=True)
 
@@ -69,7 +67,7 @@ if st.button("Lancer le backtest"):
     st.success("Modèle estimé")
 
     # 5️⃣ Backtest stratégie ALL-IN
-    portefeuille_opt, portefeuille_opt_frais, portefeuille_ref = strat_all_in(
+    portefeuille_opt, portefeuille_opt_puis_frais, portefeuille_opt_avec_frais, portefeuille_ref = strat_all_in(
         n_dims=n_dims,
         test_size=test_size,
         y=y_matrix,
@@ -99,7 +97,8 @@ if st.button("Lancer le backtest"):
         start_date=start_date,
         end_date=end_date,
         portefeuille_opt=portefeuille_opt,
-        portefeuille_opt_frais=portefeuille_opt_frais,
+        portefeuille_opt_puis_frais=portefeuille_opt_puis_frais,
+        portefeuille_opt_avec_frais=portefeuille_opt_avec_frais,
         portefeuille_ref=portefeuille_ref
     )
 
@@ -109,11 +108,13 @@ if st.button("Lancer le backtest"):
 if st.button("Résultats backtest"):
     sharpe_opt = realized_sharpe_from_portfolio_values(portefeuille_opt)
     sharpe_opt_frais = realized_sharpe_from_portfolio_values(portefeuille_opt_frais)
+    sharpe_opt_avec_frais = realized_sharpe_from_portfolio_values(portefeuille_opt_avec_frais)
     sharpe_ref = realized_sharpe_from_portfolio_values(portefeuille_ref)
 
     fig, ax = plt.subplots(figsize=(10,6))
     ax.plot(portefeuille_opt, label=f'Portefeuille optimisé sans frais, S={sharpe_opt:.2f}')
     ax.plot(portefeuille_opt_frais, label=f'Portefeuille optimisé avec frais, S={sharpe_opt_frais:.2f}')
+    ax.plot(portefeuille_opt_avec_frais, label=f'Portefeuille optimisant les frais, S={sharpe_opt_avec_frais:.2f}')
     ax.plot(portefeuille_ref, label=f'Portefeuille 1/n, S={sharpe_ref:.2f}', linestyle='--')
     ax.set_title("Backtest : Portefeuille stratégie All-in")
     ax.set_xlabel("Jours")
