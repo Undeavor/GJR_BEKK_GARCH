@@ -27,7 +27,8 @@ start_date=backtest["start_date"]
 end_date=backtest["end_date"]
 
 portefeuille_opt = backtest["portefeuille_opt"]
-portefeuille_opt_frais = backtest["portefeuille_opt_frais"]
+portefeuille_opt_puis_frais = backtest["portefeuille_opt_puis_frais"]
+portefeuille_opt_avec_frais = backtest["portefeuille_opt_avec_frais"]
 portefeuille_ref = backtest["portefeuille_ref"]
 
 # 1️⃣ Choix des tickers
