@@ -79,32 +79,6 @@ def optimal_sharpe_weights(returns, cov_matrix, rf, prev_weights=None, lambda_tc
 
 import numpy as np
 
-def optimal_sharpe_weights_with_fees(expected_returns, cov_matrix, risk_free_rate=0, prev_weights=None, lambda_tc=0.001, min_weight=1e-3):
-    expected_returns = np.array(expected_returns, dtype=float)
-    cov_matrix = np.array(cov_matrix, dtype=float)
-    
-    # Rendements excédentaires
-    excess_returns = expected_returns - risk_free_rate
-    
-    # Résolution stable Sigma * w = R_e
-    try:
-        w = np.linalg.solve(cov_matrix, excess_returns)
-    except np.linalg.LinAlgError:
-        cov_matrix += np.eye(len(cov_matrix)) * 1e-8
-        w = np.linalg.solve(cov_matrix, excess_returns)
-    
-    # Pénalisation des écarts avec les poids précédents
-    if prev_weights is not None:
-        w = w - lambda_tc * (w - prev_weights)
-    
-    # Forcer un minimum pour éviter les poids négatifs / extrêmes
-    w = np.maximum(w, min_weight)
-    
-    # Normalisation
-    weights = w / np.sum(w)
-    
-    return weights
-
 def strat_all_in(n_dims,test_size,y,H_train,A,B,C,G,allin):
     #en supposant qu'on ait tout en liquide au départ (ca change rien à l'implémentation)
     valeur_portefeuille=[[allin,allin,allin, allin]]  #sans frais, avec frais, 1/n
@@ -129,8 +103,8 @@ def strat_all_in(n_dims,test_size,y,H_train,A,B,C,G,allin):
 
         next_epsilon = predict_next_returns_from_returns(y[:i-test_size-1])
         #Calcul des poids pour le lendemain avec la prédiction de rendements et de covariance
-        w=optimal_sharpe_weights_with_fees(next_epsilon, H_new, RF_DAILY)
-        w_frais=optimal_sharpe_weights_with_fees(next_epsilon,H_new, RF_DAILY, w_prev_frais, frais_transaction)
+        w=optimal_sharpe_weights(next_epsilon, H_new, RF_DAILY)
+        w_frais=optimal_sharpe_weights(next_epsilon,H_new, RF_DAILY, w_prev_frais, frais_transaction)
         print(w,w_frais)
 
         #On calcule le rendement effectif du portefeuille à t+1 sans frais
@@ -220,7 +194,6 @@ def main():
     C=cov_and_modelparams["C"]
     G=cov_and_modelparams["G"]
     H_train=list(cov_and_modelparams["H_train"])
-    print(predict_next_returns_from_returns(y[:-2]),y[-1])
 
     strategie = input("Choisissez votre stratégie de portefeuille (allin/regu) : ").strip().lower()
 
