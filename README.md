@@ -58,10 +58,9 @@ pip install numpy pandas matplotlib yfinance statsmodels scipy numba streamlit
 ## Utilisation
 ### Mode Interactif (Recommandé)
 
-Lancez l'interface de contrôle pour configurer et visualiser vos backtests :
-```Bash
-
-streamlit run dashboard.py
+Lancez l'interface de contrôle pour configurer et visualiser vos backtests avec l'url suivante :
+```url
+https://projetetude28.streamlit.app/
 ```
 ### Mode Script
 
