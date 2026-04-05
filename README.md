@@ -1,10 +1,10 @@
-# 📈 Multi-Asset Portfolio Optimization: MGARCH-GJR & VAR Approach
+# Multi-Asset Portfolio Optimization: MGARCH-GJR & VAR Approach
 
 Ce projet implémente un pipeline complet d'optimisation de portefeuille basé sur la modélisation avancée de la volatilité multidimensionnelle. Il combine la puissance du modèle **MGARCH BEKK-GJR** pour la dynamique des covariances et un modèle **VAR** (Vector Autoregression) pour la prédiction des rendements.
 
 ---
 
-## 🏗️ Architecture du Projet
+## Architecture du Projet
 
 Le dépôt est articulé autour de trois modules Python principaux :
 
@@ -25,7 +25,7 @@ Le dépôt est articulé autour de trois modules Python principaux :
 
 ---
 
-## ⚗️ Fondamentaux Théoriques
+## Fondamentaux Théoriques
 
 ### 1. Modèle de Volatilité (BEKK-GJR)
 Contrairement à un GARCH standard, le modèle BEKK-GJR capture les corrélations dynamiques et l'**effet de levier** (asymétrie) :
@@ -38,7 +38,7 @@ Ceci permet de s'assurer que les gains théoriques ne sont pas absorbés par les
 
 ---
 
-## 📊 Stratégies de Backtest
+## Stratégies de Backtest
 
 | Stratégie | Description |
 | :--- | :--- |
@@ -54,3 +54,24 @@ Ceci permet de s'assurer que les gains théoriques ne sont pas absorbés par les
 ### Installation des dépendances
 ```bash
 pip install numpy pandas matplotlib yfinance statsmodels scipy numba streamlit
+```
+## 🖥️ Utilisation
+### Mode Interactif (Recommandé)
+
+Lancez l'interface de contrôle pour configurer et visualiser vos backtests :
+```Bash
+
+streamlit run dashboard.py
+```
+### Mode Script
+
+Pour entraîner le modèle et générer les paramètres de base :
+```Bash
+
+python data_to_cov_and_returns.py
+```
+Ensuite les utiliser pour générer les graphes associés aux stratégies :
+```Bash
+
+python cov_to_weights.py
+```
