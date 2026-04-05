@@ -49,13 +49,13 @@ Ceci permet de s'assurer que les gains théoriques ne sont pas absorbés par les
 
 ---
 
-## 🚀 Installation et Utilisation
+## Installation et Utilisation
 
 ### Installation des dépendances
 ```bash
 pip install numpy pandas matplotlib yfinance statsmodels scipy numba streamlit
 ```
-## 🖥️ Utilisation
+## Utilisation
 ### Mode Interactif (Recommandé)
 
 Lancez l'interface de contrôle pour configurer et visualiser vos backtests :
