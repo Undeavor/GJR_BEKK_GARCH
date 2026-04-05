@@ -108,13 +108,13 @@ if st.button("Lancer le backtest"):
 
 if st.button("Résultats backtest"):
     sharpe_opt = realized_sharpe_from_portfolio_values(portefeuille_opt)
-    sharpe_opt_frais = realized_sharpe_from_portfolio_values(portefeuille_opt_frais)
+    sharpe_opt_puis_frais = realized_sharpe_from_portfolio_values(portefeuille_opt_puis_frais)
     sharpe_opt_avec_frais = realized_sharpe_from_portfolio_values(portefeuille_opt_avec_frais)
     sharpe_ref = realized_sharpe_from_portfolio_values(portefeuille_ref)
 
     fig, ax = plt.subplots(figsize=(10,6))
     ax.plot(portefeuille_opt, label=f'Portefeuille optimisé sans frais, S={sharpe_opt:.2f}')
-    ax.plot(portefeuille_opt_puis_frais, label=f'Portefeuille optimisé avec frais, S={sharpe_opt_frais:.2f}')
+    ax.plot(portefeuille_opt_puis_frais, label=f'Portefeuille optimisé avec frais, S={sharpe_opt_puis_frais:.2f}')
     ax.plot(portefeuille_opt_avec_frais, label=f'Portefeuille optimisant les frais, S={sharpe_opt_avec_frais:.2f}')
     ax.plot(portefeuille_ref, label=f'Portefeuille 1/n, S={sharpe_ref:.2f}', linestyle='--')
     ax.set_title("Backtest : Portefeuille stratégie All-in")
