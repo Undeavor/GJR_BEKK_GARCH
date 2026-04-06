@@ -263,7 +263,6 @@ if train_button:
         tickers=tickers,
         n_dims=n_dims,
         y=y_matrix,
-        z=z_matrix,
         test_size=test_size,
         H_train=H_train,
         C=model.C,
