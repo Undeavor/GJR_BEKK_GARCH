@@ -3,237 +3,204 @@ import numpy as np
 import pandas as pd 
 import yfinance as yf
 import matplotlib.pyplot as plt 
+
 from data_to_cov_and_returns import (
     fit_bekk_gjr, MGARCH_GJR, compute_bekk_gjr_covariances
 )
-from cov_to_weights import (strat_all_in, strat_regu, strat_only_regu, realized_sharpe_from_portfolio_values)
+from cov_to_weights import (
+    strat_all_in, strat_regu, strat_only_regu, 
+    realized_sharpe_from_portfolio_values
+)
 
-# Initialisation langue
+# -------------------------
+# LANGUE
+# -------------------------
 if "lang" not in st.session_state:
     st.session_state.lang = "FR"
 
-# Bouton toggle
-if st.button("🌐 FR / EN"):
+if st.sidebar.button("FR / EN"):
     st.session_state.lang = "EN" if st.session_state.lang == "FR" else "FR"
 
 lang = st.session_state.lang
 
 TEXT = {
     "FR": {
-        "title": "Backtest GJR-BEKK-GARCH yfinance - Sauvegarde auto",
-        "tickers": "Entrez les tickers séparés par une virgule",
+        "title": "Backtest GJR-BEKK-GARCH",
+        "params": "Paramètres",
+        "tickers": "Tickers (séparés par virgule)",
         "capital": "Capital initial",
-        "ratio": "Proportion des données pour test",
-        "start": "Début des données",
-        "end": "Fin des données",
-        "strategy": "Choisissez la stratégie",
-        "train": "Lancer l'entrainement",
-        "backtest": "Lancer le backtest"
+        "ratio": "Proportion test",
+        "start": "Date début",
+        "end": "Date fin",
+        "strategy": "Stratégie",
+        "run": "Lancer analyse",
+        "results": "Résultats",
+        "download": "Télécharger résultats"
     },
     "EN": {
-        "title": "Backtest GJR-BEKK-GARCH yfinance - Auto save",
-        "tickers": "Enter tickers separated by commas",
+        "title": "GJR-BEKK-GARCH Backtest",
+        "params": "Parameters",
+        "tickers": "Tickers (comma separated)",
         "capital": "Initial capital",
-        "ratio": "Test data proportion",
+        "ratio": "Test ratio",
         "start": "Start date",
         "end": "End date",
-        "strategy": "Choose strategy",
-        "train": "Run training",
-        "backtest": "Run backtest"
+        "strategy": "Strategy",
+        "run": "Run analysis",
+        "results": "Results",
+        "download": "Download results"
     }
 }
 
 st.title(TEXT[lang]["title"])
 
+# -------------------------
+# CHARGEMENT DONNÉES SAUVEGARDÉES
+# -------------------------
 backtest = np.load("backtest_results.npz", allow_pickle=True)
 
 tickers = backtest["tickers"]
-n_dims = backtest["n_dims"]
 y = backtest["y"]
 test_size = backtest["test_size"]
-H_train = list(backtest["H_train"]) 
-C = backtest["C"]
-A = backtest["A"]
-B = backtest["B"]
-G = backtest["G"]
-initial_capital=backtest["initial_capital"]
-start_date=backtest["start_date"]
-end_date=backtest["end_date"]
+initial_capital = backtest["initial_capital"]
+start_date = pd.to_datetime(str(backtest["start_date"]))
+end_date = pd.to_datetime(str(backtest["end_date"]))
 
-# ALL-IN
-allin_opt = backtest["allin_opt"]
-allin_opt_puis_frais = backtest["allin_opt_puis_frais"]
-allin_opt_avec_frais = backtest["allin_opt_avec_frais"]
-allin_ref = backtest["allin_ref"]
+# -------------------------
+# SIDEBAR PARAMÈTRES
+# -------------------------
+with st.sidebar:
+    st.header(TEXT[lang]["params"])
 
-# REGU
-regu_opt = backtest["regu_opt"]
-regu_opt_puis_frais = backtest["regu_opt_puis_frais"]
-regu_opt_avec_frais = backtest["regu_opt_avec_frais"]
-regu_ref = backtest["regu_ref"]
+    tickers_input = st.text_input(
+        TEXT[lang]["tickers"],
+        value=",".join(tickers)
+    )
+    tickers = [t.strip() for t in tickers_input.split(",")]
 
-# ONLY REGU 
-only_regu_opt = backtest["only_regu_opt"]
-only_regu_opt_puis_frais = backtest["only_regu_opt_puis_frais"]
-only_regu_opt_avec_frais = backtest["only_regu_opt_avec_frais"]
-only_regu_ref = backtest["only_regu_ref"]
+    initial_capital = st.number_input(
+        TEXT[lang]["capital"], 
+        value=int(initial_capital), 
+        step=1000
+    )
 
-# 1️⃣ Choix des tickers
-tickers_input = st.text_input(
-    TEXT[lang]["tickers"],
-    value=",".join(tickers)
-)
-tickers = [t.strip() for t in tickers_input.split(",")]
-n_dims = len(tickers)
+    test_ratio = st.slider(
+        TEXT[lang]["ratio"], 
+        0.05, 0.3, 
+        int(test_size)/len(y)
+    )
 
-# 2️⃣ Paramètres du backtest
-initial_capital = st.number_input(TEXT[lang]["capital"], value=int(initial_capital), step=1000)
-test_ratio = st.slider(TEXT[lang]["ratio"], 0.05, 0.3, int(test_size)/len(y))
-start_date = st.date_input(TEXT[lang]["start"], value=pd.to_datetime(str(start_date)))
-end_date = st.date_input(TEXT[lang]["end"], value=pd.to_datetime(str(end_date)))
+    start_date = st.date_input(TEXT[lang]["start"], value=start_date)
+    end_date = st.date_input(TEXT[lang]["end"], value=end_date)
 
-strategie = st.selectbox(
-    TEXT[lang]["strategy"],
-    ["allin", "regu", "onlyregu"]
-)
+    strategie = st.selectbox(
+        TEXT[lang]["strategy"],
+        ["allin", "regu", "onlyregu"]
+    )
 
-# 3️⃣ Bouton pour lancer le backtest
-if st.button(TEXT[lang]["train"]):
+    run_button = st.button(TEXT[lang]["run"])
 
-    with st.spinner("Téléchargement des données..."):
+# -------------------------
+# MAIN
+# -------------------------
+st.info("Configure parameters in the sidebar and run the analysis." if lang=="EN" 
+        else "Configurez les paramètres dans la barre latérale puis lancez l'analyse.")
+
+if run_button:
+
+    with st.spinner("Loading data..."):
         data = yf.download(tickers, start='2010-01-01', end='2025-12-06', auto_adjust=True)["Close"]
         y = np.log(data).diff().dropna()
         y_matrix = y.values
+
         test_size = int(test_ratio * len(y_matrix))
         y_train = y_matrix[:-test_size]
-        z = data.dropna()
-        z_matrix=z.values
 
-    st.success(f"Données téléchargées : {y_train.shape[0]} obs, {n_dims} tickers")
+    st.success("Data loaded")
 
-    # 4️⃣ Fit BEKK-GJR
-    with st.spinner("Estimation du modèle BEKK-GJR..."):
-        result = fit_bekk_gjr(y_train, n_dims)
-        model = MGARCH_GJR.from_params(result.x, n_dims)
-        H_train = list(compute_bekk_gjr_covariances(y_train, model.C, model.A, model.B, model.G))
+    # -------------------------
+    # MODEL
+    # -------------------------
+    with st.spinner("Estimating model..."):
+        result = fit_bekk_gjr(y_train, len(tickers))
+        model = MGARCH_GJR.from_params(result.x, len(tickers))
 
-    st.success("Modèle estimé")
+        H_train = list(
+            compute_bekk_gjr_covariances(
+                y_train, model.C, model.A, model.B, model.G
+            )
+        )
 
-    # 5️⃣ Backtest stratégie ALL-IN
-    allin_opt, allin_opt_puis_frais, allin_opt_avec_frais, allin_ref = strat_all_in(
-        n_dims=n_dims,
-        test_size=test_size,
-        y=y_matrix,
-        H_train=H_train,
-        A=model.A,
-        B=model.B,
-        C=model.C,
-        G=model.G,
-        allin=initial_capital
-    )
-    # 5️⃣ Backtest stratégie REGU
-    regu_opt, regu_opt_puis_frais, regu_opt_avec_frais, regu_ref, total = strat_regu(
-        n_dims=n_dims,
-        test_size=test_size,
-        y=y_matrix,
-        H_train=H_train,
-        A=model.A,
-        B=model.B,
-        C=model.C,
-        G=model.G,
-        regu=initial_capital/test_size
-    )
-    # 5️⃣ Backtest stratégie ONLYREGU
-    only_regu_opt, only_regu_opt_puis_frais, only_regu_opt_avec_frais, only_regu_ref, total = strat_only_regu(
-        n_dims=n_dims,
-        test_size=test_size,
-        y=y_matrix,
-        H_train=H_train,
-        A=model.A,
-        B=model.B,
-        C=model.C,
-        G=model.G,
-        regu=initial_capital/test_size
-    )
-    # 6️⃣ Sauvegarde dans un fichier NPZ
+    st.success("Model estimated")
+
+    # -------------------------
+    # BACKTEST
+    # -------------------------
+    if strategie == "allin":
+        opt, opt_pf, opt_fees, ref = strat_all_in(
+            len(tickers), test_size, y_matrix, H_train,
+            model.A, model.B, model.C, model.G,
+            initial_capital
+        )
+
+    elif strategie == "regu":
+        opt, opt_pf, opt_fees, ref, _ = strat_regu(
+            len(tickers), test_size, y_matrix, H_train,
+            model.A, model.B, model.C, model.G,
+            initial_capital/test_size
+        )
+
+    else:
+        opt, opt_pf, opt_fees, ref, _ = strat_only_regu(
+            len(tickers), test_size, y_matrix, H_train,
+            model.A, model.B, model.C, model.G,
+            initial_capital/test_size
+        )
+
+    # -------------------------
+    # METRICS
+    # -------------------------
+    sharpe = realized_sharpe_from_portfolio_values(opt)
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Sharpe", f"{sharpe:.2f}")
+    col2.metric("Final value", f"{opt[-1]:.0f}")
+    col3.metric("Return (%)", f"{(opt[-1]/initial_capital - 1)*100:.1f}")
+
+    # -------------------------
+    # PLOT
+    # -------------------------
+    st.header(TEXT[lang]["results"])
+
+    fig, ax = plt.subplots(figsize=(10,6))
+    ax.plot(opt, label="Optimized")
+    ax.plot(opt_pf, label="Optimized + fees")
+    ax.plot(opt_fees, label="Fees optimized")
+    ax.plot(ref, label="1/n", linestyle='--')
+
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Portfolio value")
+    ax.legend()
+    ax.grid(True)
+
+    st.pyplot(fig)
+
+    # -------------------------
+    # SAVE
+    # -------------------------
     save_path = "backtest_results.npz"
+
     np.savez_compressed(
         save_path,
         tickers=tickers,
-        n_dims=n_dims,
         y=y_matrix,
-        z=z_matrix,
         test_size=test_size,
-        H_train=H_train,
-        C=model.C,
-        A=model.A,
-        B=model.B,
-        G=model.G,
         initial_capital=initial_capital,
-        start_date=start_date,
-        end_date=end_date,
-        allin_opt=allin_opt,
-        allin_opt_puis_frais=allin_opt_puis_frais,
-        allin_opt_avec_frais=allin_opt_avec_frais,
-        allin_ref=allin_ref,
-
-        regu_opt=regu_opt,
-        regu_opt_puis_frais=regu_opt_puis_frais,
-        regu_opt_avec_frais=regu_opt_avec_frais,
-        regu_ref=regu_ref,
-
-        only_regu_opt=only_regu_opt,
-        only_regu_opt_puis_frais=only_regu_opt_puis_frais,
-        only_regu_opt_avec_frais=only_regu_opt_avec_frais,
-        only_regu_ref=only_regu_ref,
+        opt=opt
     )
 
-    st.success(f"Résultats sauvegardés dans {save_path}")
-    st.download_button("Télécharger le fichier NPZ", data=open(save_path, "rb"), file_name=save_path)
-
-if st.button(TEXT[lang]["backtest"]):
-    if strategie == "allin":
-        sharpe_opt = realized_sharpe_from_portfolio_values(allin_opt)
-        sharpe_opt_puis_frais = realized_sharpe_from_portfolio_values(allin_opt_puis_frais)
-        sharpe_opt_avec_frais = realized_sharpe_from_portfolio_values(allin_opt_avec_frais)
-        sharpe_ref = realized_sharpe_from_portfolio_values(allin_ref)
-
-        fig, ax = plt.subplots(figsize=(10,6))
-        ax.plot(allin_opt, label=f'Portefeuille optimisé sans frais, S={sharpe_opt:.2f}')
-        ax.plot(allin_opt_puis_frais, label=f'Portefeuille optimisé avec frais, S={sharpe_opt_puis_frais:.2f}')
-        ax.plot(allin_opt_avec_frais, label=f'Portefeuille optimisant les frais, S={sharpe_opt_avec_frais:.2f}')
-        ax.plot(allin_ref, label=f'Portefeuille 1/n, S={sharpe_ref:.2f}', linestyle='--')
-        ax.set_title("Backtest : Portefeuille stratégie All-in")
-        ax.set_xlabel("Jours")
-        ax.set_ylabel("Valeur du portefeuille")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
-    elif strategie == "regu":
-        total = [i * initial_capital / test_size for i in range(len(regu_opt))]
-        fig, ax = plt.subplots(figsize=(10,6))
-        ax.plot(regu_opt, label='Portefeuille optimisé sans frais')
-        ax.plot(regu_opt_puis_frais, label='Portefeuille optimisé avec frais')
-        ax.plot(regu_opt_avec_frais, label='Portefeuille optimisant les frais')
-        ax.plot(regu_ref, label='Portefeuille 1/n', linestyle='--')
-        ax.plot(total, label='Argent investi')
-        ax.set_title("Backtest : Portefeuille stratégie REGU")
-        ax.set_xlabel("Jours")
-        ax.set_ylabel("Valeur du portefeuille")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
-    else:
-        total = [i * initial_capital / test_size for i in range(len(regu_opt))]
-        fig, ax = plt.subplots(figsize=(10,6))
-        ax.plot(only_regu_opt, label='Portefeuille optimisé sans frais')
-        ax.plot(only_regu_opt_puis_frais, label='Portefeuille optimisé avec frais')
-        ax.plot(only_regu_opt_avec_frais, label='Portefeuille optimisant les frais')
-        ax.plot(only_regu_ref, label='Portefeuille 1/n', linestyle='--')
-        ax.plot(total, label='Argent investi')
-        ax.set_title("Backtest : Portefeuille stratégie REGU")
-        ax.set_xlabel("Jours")
-        ax.set_ylabel("Valeur du portefeuille")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
+    st.download_button(
+        TEXT[lang]["download"],
+        data=open(save_path, "rb"),
+        file_name=save_path
+    )
