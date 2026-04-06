@@ -96,6 +96,23 @@ You can compare different investment approaches (all-in, periodic) and analyze t
     }
 }
 
+# Dict nom complet → ticker
+TICKERS_DICT = {
+    "Apple Inc.": "AAPL",
+    "Microsoft Corporation": "MSFT",
+    "Alphabet Inc. (Google)": "GOOG",
+    "Amazon.com Inc.": "AMZN",
+    "Tesla Inc.": "TSLA",
+    "Meta Platforms Inc.": "META",
+    "NVIDIA Corporation": "NVDA",
+    "JPMorgan Chase & Co.": "JPM",
+    "Visa Inc.": "V",
+    "Johnson & Johnson": "JNJ"
+}
+
+# Liste pour la searchbar : noms visibles
+TICKER_NAMES = list(TICKERS_DICT.keys())
+
 st.title(TEXT[lang]["title"])
 
 st.markdown(TEXT[lang]["intro"])
@@ -145,6 +162,16 @@ only_regu_ref = backtest["only_regu_ref"]
 # SIDEBAR PARAMÈTRES
 # -------------------------
 with st.sidebar:
+    search_input = st.text_input("Cherchez une entreprise pour connaître son ticker")
+    # Filtrer les correspondances dynamiquement
+    if search_input:
+        matches = [name for name in TICKER_NAMES if search_input.lower() in name.lower()]
+        if matches:
+            selected = st.selectbox("Correspondances trouvées", matches)
+            st.write(f"{selected} → {TICKERS_DICT[selected]}")
+        else:
+            st.write("Aucune correspondance trouvée")
+            
     st.header(TEXT[lang]["params"])
 
     tickers_input = st.text_input(
