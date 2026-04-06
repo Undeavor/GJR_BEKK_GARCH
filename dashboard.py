@@ -8,7 +8,42 @@ from data_to_cov_and_returns import (
 )
 from cov_to_weights import (strat_all_in, strat_regu, strat_only_regu, realized_sharpe_from_portfolio_values)
 
-st.title("Backtest GJR-BEKK-GARCH yfinance - Sauvegarde auto")
+# Initialisation langue
+if "lang" not in st.session_state:
+    st.session_state.lang = "FR"
+
+# Bouton toggle
+if st.button("🌐 FR / EN"):
+    st.session_state.lang = "EN" if st.session_state.lang == "FR" else "FR"
+
+lang = st.session_state.lang
+
+TEXT = {
+    "FR": {
+        "title": "Backtest GJR-BEKK-GARCH yfinance - Sauvegarde auto",
+        "tickers": "Entrez les tickers séparés par une virgule",
+        "capital": "Capital initial",
+        "ratio": "Proportion des données pour test",
+        "start": "Début des données",
+        "end": "Fin des données",
+        "strategy": "Choisissez la stratégie",
+        "train": "Lancer l'entrainement",
+        "backtest": "Lancer le backtest"
+    },
+    "EN": {
+        "title": "Backtest GJR-BEKK-GARCH yfinance - Auto save",
+        "tickers": "Enter tickers separated by commas",
+        "capital": "Initial capital",
+        "ratio": "Test data proportion",
+        "start": "Start date",
+        "end": "End date",
+        "strategy": "Choose strategy",
+        "train": "Run training",
+        "backtest": "Run backtest"
+    }
+}
+
+st.title(TEXT[lang]["title"])
 
 backtest = np.load("backtest_results.npz", allow_pickle=True)
 
@@ -37,7 +72,7 @@ regu_opt_puis_frais = backtest["regu_opt_puis_frais"]
 regu_opt_avec_frais = backtest["regu_opt_avec_frais"]
 regu_ref = backtest["regu_ref"]
 
-# ONLY REGU (si tu gardes cette variante)
+# ONLY REGU 
 only_regu_opt = backtest["only_regu_opt"]
 only_regu_opt_puis_frais = backtest["only_regu_opt_puis_frais"]
 only_regu_opt_avec_frais = backtest["only_regu_opt_avec_frais"]
@@ -45,25 +80,25 @@ only_regu_ref = backtest["only_regu_ref"]
 
 # 1️⃣ Choix des tickers
 tickers_input = st.text_input(
-    "Entrez les tickers séparés par une virgule",
+    TEXT[lang]["tickers"],
     value=",".join(tickers)
 )
 tickers = [t.strip() for t in tickers_input.split(",")]
 n_dims = len(tickers)
 
 # 2️⃣ Paramètres du backtest
-initial_capital = st.number_input("Capital initial", value=int(initial_capital), step=1000)
-test_ratio = st.slider("Proportion des données pour test", 0.05, 0.3, int(test_size)/len(y))
-start_date = st.date_input("Début des données", value=pd.to_datetime(str(start_date)))
-end_date = st.date_input("Fin des données", value=pd.to_datetime(str(end_date)))
+initial_capital = st.number_input(TEXT[lang]["capital"], value=int(initial_capital), step=1000)
+test_ratio = st.slider(TEXT[lang]["ratio"], 0.05, 0.3, int(test_size)/len(y))
+start_date = st.date_input(TEXT[lang]["start"], value=pd.to_datetime(str(start_date)))
+end_date = st.date_input(TEXT[lang]["end"], value=pd.to_datetime(str(end_date)))
 
 strategie = st.selectbox(
-    "Choisissez la stratégie: all-in au début puis recadrage régulier, investissement et recadrage régulier, juste investissement régulier",
+    TEXT[lang]["strategy"],
     ["allin", "regu", "onlyregu"]
 )
 
 # 3️⃣ Bouton pour lancer le backtest
-if st.button("Lancer l'entrainement"):
+if st.button(TEXT[lang]["train"]):
 
     with st.spinner("Téléchargement des données..."):
         data = yf.download(tickers, start='2010-01-01', end='2025-12-06', auto_adjust=True)["Close"]
@@ -156,7 +191,7 @@ if st.button("Lancer l'entrainement"):
     st.success(f"Résultats sauvegardés dans {save_path}")
     st.download_button("Télécharger le fichier NPZ", data=open(save_path, "rb"), file_name=save_path)
 
-if st.button("Lancer le backtest"):
+if st.button(TEXT[lang]["backtest"]):
     if strategie == "allin":
         sharpe_opt = realized_sharpe_from_portfolio_values(allin_opt)
         sharpe_opt_puis_frais = realized_sharpe_from_portfolio_values(allin_opt_puis_frais)
