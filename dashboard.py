@@ -40,10 +40,28 @@ TEXT = {
         "strategy": "Choisissez la stratégie",
         "train": "Lancer l'entrainement",
         "backtest": "Lancer le backtest",
-        "results": "Résultats backtest"
+        "results": "Résultats backtest",
+        "params": "Paramètres",
+        "info": "Configurez les paramètres dans la barre latérale puis lancez l'entraînement et le backtest.",
+        "expander": "Explication des stratégies",
+        "data_loading": "Téléchargement des données...",
+        "model_estimation": "Estimation du modèle BEKK-GJR...",
+        "data_loaded": "Données téléchargées",
+        "model_done": "Modèle estimé",
+        "backtest_done": "Backtest terminé",
+        "days": "Jours",
+        "portfolio": "Valeur du portefeuille",
+        "invested": "Argent investi",
+        "opt_no_fees": "Portefeuille optimisé sans frais",
+        "opt_with_fees": "Portefeuille optimisé avec frais",
+        "opt_fees": "Portefeuille optimisant les frais",
+        "benchmark": "Portefeuille 1/n",
+        "title_allin": "Backtest : stratégie All-in",
+        "title_regu": "Backtest : stratégie REGU",
+        "title_onlyregu": "Backtest : stratégie ONLYREGU"
     },
     "EN": {
-        "title": "Backtest GJR-BEKK-GARCH yfinance - Auto save",
+        "title": "GJR-BEKK-GARCH Backtest yfinance - Auto save",
         "tickers": "Enter tickers separated by commas",
         "capital": "Initial capital",
         "ratio": "Test data proportion",
@@ -52,7 +70,25 @@ TEXT = {
         "strategy": "Choose strategy",
         "train": "Run training",
         "backtest": "Run backtest",
-        "results": "Backtest results"
+        "results": "Backtest results",
+        "params": "Parameters",
+        "info": "Configure parameters in the sidebar then run training and backtest.",
+        "expander": "Strategy explanation",
+        "data_loading": "Downloading data...",
+        "model_estimation": "Estimating BEKK-GJR model...",
+        "data_loaded": "Data loaded",
+        "model_done": "Model estimated",
+        "backtest_done": "Backtest completed",
+        "days": "Days",
+        "portfolio": "Portfolio value",
+        "invested": "Invested capital",
+        "opt_no_fees": "Optimized portfolio (no fees)",
+        "opt_with_fees": "Optimized portfolio (with fees)",
+        "opt_fees": "Fees-optimized portfolio",
+        "benchmark": "Equal weight portfolio",
+        "title_allin": "Backtest: All-in strategy",
+        "title_regu": "Backtest: Regular investment strategy",
+        "title_onlyregu": "Backtest: Only regular investment"
     }
 }
 
@@ -61,11 +97,7 @@ st.title(TEXT[lang]["title"])
 # -------------------------
 # INFOS
 # -------------------------
-st.info(
-    "Configure parameters in the sidebar then run training and backtest."
-    if lang == "EN"
-    else "Configurez les paramètres dans la barre latérale puis lancez l'entraînement et le backtest."
-)
+st.info(TEXT[lang]["info"])
 
 # -------------------------
 # CHARGEMENT BACKTEST
@@ -107,7 +139,7 @@ only_regu_ref = backtest["only_regu_ref"]
 # SIDEBAR PARAMÈTRES
 # -------------------------
 with st.sidebar:
-    st.header("Paramètres")
+    st.header(TEXT[lang]["params"])
 
     tickers_input = st.text_input(
         TEXT[lang]["tickers"],
@@ -151,7 +183,7 @@ with st.sidebar:
 # -------------------------
 # EXPLICATION
 # -------------------------
-with st.expander("Explication des stratégies"):
+with st.expander(TEXT[lang]["expander"]):
     st.write("""
     allin : investissement total initial  
     regu : investissement progressif  
@@ -163,7 +195,7 @@ with st.expander("Explication des stratégies"):
 # -------------------------
 if train_button:
 
-    with st.spinner("Téléchargement des données..."):
+    with st.spinner(TEXT[lang]["data_loading"]):
         data = yf.download(tickers, start='2010-01-01', end='2025-12-06', auto_adjust=True)["Close"]
         y = np.log(data).diff().dropna()
         y_matrix = y.values
@@ -172,14 +204,14 @@ if train_button:
         z = data.dropna()
         z_matrix=z.values
 
-    st.success(f"Données téléchargées : {y_train.shape[0]} obs, {n_dims} tickers")
+    st.success(f"{TEXT[lang]['data_loaded']} : {y_train.shape[0]} obs, {n_dims} tickers")
 
-    with st.spinner("Estimation du modèle BEKK-GJR..."):
+    with st.spinner(TEXT[lang]["model_estimation"]):
         result = fit_bekk_gjr(y_train, n_dims)
         model = MGARCH_GJR.from_params(result.x, n_dims)
         H_train = list(compute_bekk_gjr_covariances(y_train, model.C, model.A, model.B, model.G))
 
-    st.success("Modèle estimé")
+    st.success(TEXT[lang]["model_done"])
 
     allin_opt, allin_opt_puis_frais, allin_opt_avec_frais, allin_ref = strat_all_in(
         n_dims, test_size, y_matrix, H_train,
@@ -196,7 +228,7 @@ if train_button:
         model.A, model.B, model.C, model.G, initial_capital/test_size
     )
 
-    st.success("Backtest terminé")
+    st.success(TEXT[lang]["backtest_done"])
 
 # -------------------------
 # BACKTEST DISPLAY
@@ -212,30 +244,32 @@ if backtest_button:
         sharpe_opt_avec_frais = realized_sharpe_from_portfolio_values(allin_opt_avec_frais)
         sharpe_ref = realized_sharpe_from_portfolio_values(allin_ref)
 
-        ax.plot(allin_opt, label=f'Portefeuille optimisé sans frais, S={sharpe_opt:.2f}')
-        ax.plot(allin_opt_puis_frais, label=f'Portefeuille optimisé avec frais, S={sharpe_opt_puis_frais:.2f}')
-        ax.plot(allin_opt_avec_frais, label=f'Portefeuille optimisant les frais, S={sharpe_opt_avec_frais:.2f}')
-        ax.plot(allin_ref, label=f'Portefeuille 1/n, S={sharpe_ref:.2f}', linestyle='--')
-        ax.set_title("Backtest : Portefeuille stratégie All-in")
+        ax.plot(allin_opt, label=f"{TEXT[lang]['opt_no_fees']}, S={sharpe_opt:.2f}")
+        ax.plot(allin_opt_puis_frais, label=f"{TEXT[lang]['opt_with_fees']}, S={sharpe_opt_puis_frais:.2f}")
+        ax.plot(allin_opt_avec_frais, label=f"{TEXT[lang]['opt_fees']}, S={sharpe_opt_avec_frais:.2f}")
+        ax.plot(allin_ref, label=f"{TEXT[lang]['benchmark']}, S={sharpe_ref:.2f}", linestyle='--')
+        ax.set_title(TEXT[lang]["title_allin"])
     elif strategie == "regu":
         total = [i * initial_capital / test_size for i in range(len(regu_opt))]
-        ax.plot(regu_opt, label='Portefeuille optimisé sans frais')
-        ax.plot(regu_opt_puis_frais, label='Portefeuille optimisé avec frais')
-        ax.plot(regu_opt_avec_frais, label='Portefeuille optimisant les frais')
-        ax.plot(regu_ref, label='Portefeuille 1/n', linestyle='--')
-        ax.plot(total, label='Argent investi')
-        ax.set_title("Backtest : Portefeuille stratégie REGU")
+        ax.plot(regu_opt, label=TEXT[lang]["opt_no_fees"])
+        ax.plot(regu_opt_puis_frais, label=TEXT[lang]["opt_with_fees"])
+        ax.plot(regu_opt_avec_frais, label=TEXT[lang]["opt_fees"])
+        ax.plot(regu_ref, label=TEXT[lang]["benchmark"], linestyle='--')
+        ax.plot(total, label=TEXT[lang]["invested"])
+        
+        ax.set_title(TEXT[lang]["title_regu"])
     else:
         total = [i * initial_capital / test_size for i in range(len(regu_opt))]
-        ax.plot(only_regu_opt, label='Portefeuille optimisé sans frais')
-        ax.plot(only_regu_opt_puis_frais, label='Portefeuille optimisé avec frais')
-        ax.plot(only_regu_opt_avec_frais, label='Portefeuille optimisant les frais')
-        ax.plot(only_regu_ref, label='Portefeuille 1/n', linestyle='--')
-        ax.plot(total, label='Argent investi')
-        ax.set_title("Backtest : Portefeuille stratégie ONLYREGU")
+        ax.plot(only_regu_opt, label=TEXT[lang]["opt_no_fees"])
+        ax.plot(only_regu_opt_puis_frais, label=TEXT[lang]["opt_with_fees"])
+        ax.plot(only_regu_opt_avec_frais, label=TEXT[lang]["opt_fees"])
+        ax.plot(only_regu_ref, label=TEXT[lang]["benchmark"], linestyle='--')
+        ax.plot(total, label=TEXT[lang]["invested"])
         
-    ax.set_xlabel("Jours")
-    ax.set_ylabel("Valeur du portefeuille")
+        ax.set_title(TEXT[lang]["title_onlyregu"])
+        
+    ax.set_xlabel(TEXT[lang]["days"])
+    ax.set_ylabel(TEXT[lang]["portfolio"])    
     ax.legend()
     ax.grid(True)
     st.pyplot(fig)
