@@ -11,6 +11,7 @@ from cov_to_weights import (
     strat_all_in, strat_regu, strat_only_regu, 
     realized_sharpe_from_portfolio_values
 )
+from yfinance_tickers import TICKERS_DICT, TICKER_NAMES
 
 # -------------------------
 # CONFIG PAGE
@@ -103,23 +104,6 @@ You can compare different investment approaches (all-in, periodic) and analyze t
         "title_onlyregu": "Backtest: Only regular investment"
     }
 }
-
-# Dict nom complet → ticker
-TICKERS_DICT = {
-    "Apple Inc.": "AAPL",
-    "Microsoft Corporation": "MSFT",
-    "Alphabet Inc. (Google)": "GOOG",
-    "Amazon.com Inc.": "AMZN",
-    "Tesla Inc.": "TSLA",
-    "Meta Platforms Inc.": "META",
-    "NVIDIA Corporation": "NVDA",
-    "JPMorgan Chase & Co.": "JPM",
-    "Visa Inc.": "V",
-    "Johnson & Johnson": "JNJ"
-}
-
-# Liste pour la searchbar : noms visibles
-TICKER_NAMES = list(TICKERS_DICT.keys())
 
 st.title(TEXT[lang]["title"])
 
