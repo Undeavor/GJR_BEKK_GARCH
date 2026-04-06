@@ -184,11 +184,20 @@ with st.sidebar:
 # EXPLICATION
 # -------------------------
 with st.expander(TEXT[lang]["expander"]):
-    st.write("""
+    st.write(
+    """
     allin : investissement total initial  
     regu : investissement progressif  
     onlyregu : investissement régulier pur  
-    """)
+    """
+    if lang == "FR"
+    else
+    """
+    allin : full initial investment  
+    regu : progressive investment  
+    onlyregu : pure periodic investment  
+    """
+    )
 
 # -------------------------
 # TRAIN
