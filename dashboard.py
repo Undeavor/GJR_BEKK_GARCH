@@ -33,6 +33,10 @@ TEXT = {
     "FR": {
         "title": "Backtest GJR-BEKK-GARCH yfinance - Sauvegarde auto",
         "tickers": "Entrez les tickers séparés par une virgule",
+        "ticker_search_header": "Recherche de ticker",
+        "ticker_search_input": "Cherchez une entreprise pour connaître son ticker",
+        "ticker_search_matches": "Correspondances trouvées",
+        "ticker_search_none": "Aucune correspondance trouvée",
         "capital": "Capital initial",
         "ratio": "Proportion des données pour test",
         "start": "Début des données",
@@ -65,6 +69,10 @@ Vous pouvez comparer différentes approches d'investissement (all-in, régulier)
     "EN": {
         "title": "GJR-BEKK-GARCH Backtest yfinance - Auto save",
         "tickers": "Enter tickers separated by commas",
+        "ticker_search_header": "Ticker Search",
+        "ticker_search_input": "Search a company to find its ticker",
+        "ticker_search_matches": "Matches found",
+        "ticker_search_none": "No matches found",
         "capital": "Initial capital",
         "ratio": "Test data proportion",
         "start": "Start date",
@@ -162,15 +170,17 @@ only_regu_ref = backtest["only_regu_ref"]
 # SIDEBAR PARAMÈTRES
 # -------------------------
 with st.sidebar:
-    search_input = st.text_input("Cherchez une entreprise pour connaître son ticker")
-    # Filtrer les correspondances dynamiquement
+    st.header(TEXT[lang]["ticker_search_header"])
+
+    search_input = st.text_input(TEXT[lang]["ticker_search_input"])
+    
     if search_input:
         matches = [name for name in TICKER_NAMES if search_input.lower() in name.lower()]
         if matches:
-            selected = st.selectbox("Correspondances trouvées", matches)
+            selected = st.selectbox(TEXT[lang]["ticker_search_matches"], matches)
             st.write(f"{selected} → {TICKERS_DICT[selected]}")
         else:
-            st.write("Aucune correspondance trouvée")
+            st.write(TEXT[lang]["ticker_search_none"])
             
     st.header(TEXT[lang]["params"])
 
