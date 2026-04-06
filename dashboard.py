@@ -39,7 +39,8 @@ TEXT = {
         "end": "Fin des données",
         "strategy": "Choisissez la stratégie",
         "train": "Lancer l'entrainement",
-        "backtest": "Lancer le backtest"
+        "backtest": "Lancer le backtest",
+        "results": "Résultats backtest"
     },
     "EN": {
         "title": "Backtest GJR-BEKK-GARCH yfinance - Auto save",
@@ -50,7 +51,8 @@ TEXT = {
         "end": "End date",
         "strategy": "Choose strategy",
         "train": "Run training",
-        "backtest": "Run backtest"
+        "backtest": "Run backtest",
+        "results": "Backtest results"
     }
 }
 
@@ -201,38 +203,39 @@ if train_button:
 # -------------------------
 if backtest_button:
 
-    st.header("Résultats")
-
-    if strategie == "allin":
-        sharpe_opt = realized_sharpe_from_portfolio_values(allin_opt)
-
-        col1, col2 = st.columns(2)
-        col1.metric("Sharpe", f"{sharpe_opt:.2f}")
-        col2.metric("Valeur finale", f"{allin_opt[-1]:.0f}")
-
+    st.header(TEXT[lang]["results"])
     fig, ax = plt.subplots(figsize=(10,6))
 
     if strategie == "allin":
-        ax.plot(allin_opt)
-        ax.plot(allin_opt_puis_frais)
-        ax.plot(allin_opt_avec_frais)
-        ax.plot(allin_ref)
+        sharpe_opt = realized_sharpe_from_portfolio_values(allin_opt)
+        sharpe_opt_puis_frais = realized_sharpe_from_portfolio_values(allin_opt_puis_frais)
+        sharpe_opt_avec_frais = realized_sharpe_from_portfolio_values(allin_opt_avec_frais)
+        sharpe_ref = realized_sharpe_from_portfolio_values(allin_ref)
 
+        ax.plot(allin_opt, label=f'Portefeuille optimisé sans frais, S={sharpe_opt:.2f}')
+        ax.plot(allin_opt_puis_frais, label=f'Portefeuille optimisé avec frais, S={sharpe_opt_puis_frais:.2f}')
+        ax.plot(allin_opt_avec_frais, label=f'Portefeuille optimisant les frais, S={sharpe_opt_avec_frais:.2f}')
+        ax.plot(allin_ref, label=f'Portefeuille 1/n, S={sharpe_ref:.2f}', linestyle='--')
+        ax.set_title("Backtest : Portefeuille stratégie All-in")
     elif strategie == "regu":
         total = [i * initial_capital / test_size for i in range(len(regu_opt))]
-        ax.plot(regu_opt)
-        ax.plot(regu_opt_puis_frais)
-        ax.plot(regu_opt_avec_frais)
-        ax.plot(regu_ref)
-        ax.plot(total)
-
+        ax.plot(regu_opt, label='Portefeuille optimisé sans frais')
+        ax.plot(regu_opt_puis_frais, label='Portefeuille optimisé avec frais')
+        ax.plot(regu_opt_avec_frais, label='Portefeuille optimisant les frais')
+        ax.plot(regu_ref, label='Portefeuille 1/n', linestyle='--')
+        ax.plot(total, label='Argent investi')
+        ax.set_title("Backtest : Portefeuille stratégie REGU")
     else:
         total = [i * initial_capital / test_size for i in range(len(regu_opt))]
-        ax.plot(only_regu_opt)
-        ax.plot(only_regu_opt_puis_frais)
-        ax.plot(only_regu_opt_avec_frais)
-        ax.plot(only_regu_ref)
-        ax.plot(total)
-
+        ax.plot(only_regu_opt, label='Portefeuille optimisé sans frais')
+        ax.plot(only_regu_opt_puis_frais, label='Portefeuille optimisé avec frais')
+        ax.plot(only_regu_opt_avec_frais, label='Portefeuille optimisant les frais')
+        ax.plot(only_regu_ref, label='Portefeuille 1/n', linestyle='--')
+        ax.plot(total, label='Argent investi')
+        ax.set_title("Backtest : Portefeuille stratégie ONLYREGU")
+        
+    ax.set_xlabel("Jours")
+    ax.set_ylabel("Valeur du portefeuille")
+    ax.legend()
     ax.grid(True)
     st.pyplot(fig)
