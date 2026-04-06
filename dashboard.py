@@ -210,8 +210,6 @@ if train_button:
         y_matrix = y.values
         test_size = int(test_ratio * len(y_matrix))
         y_train = y_matrix[:-test_size]
-        z = data.dropna()
-        z_matrix=z.values
 
     st.success(f"{TEXT[lang]['data_loaded']} : {y_train.shape[0]} obs, {n_dims} tickers")
 
@@ -222,21 +220,77 @@ if train_button:
 
     st.success(TEXT[lang]["model_done"])
 
+    # 5️⃣ Backtest stratégie ALL-IN
     allin_opt, allin_opt_puis_frais, allin_opt_avec_frais, allin_ref = strat_all_in(
-        n_dims, test_size, y_matrix, H_train,
-        model.A, model.B, model.C, model.G, initial_capital
+        n_dims=n_dims,
+        test_size=test_size,
+        y=y_matrix,
+        H_train=H_train,
+        A=model.A,
+        B=model.B,
+        C=model.C,
+        G=model.G,
+        allin=initial_capital
     )
-
+    # 5️⃣ Backtest stratégie REGU
     regu_opt, regu_opt_puis_frais, regu_opt_avec_frais, regu_ref, total = strat_regu(
-        n_dims, test_size, y_matrix, H_train,
-        model.A, model.B, model.C, model.G, initial_capital/test_size
+        n_dims=n_dims,
+        test_size=test_size,
+        y=y_matrix,
+        H_train=H_train,
+        A=model.A,
+        B=model.B,
+        C=model.C,
+        G=model.G,
+        regu=initial_capital/test_size
     )
-
+    # 5️⃣ Backtest stratégie ONLYREGU
     only_regu_opt, only_regu_opt_puis_frais, only_regu_opt_avec_frais, only_regu_ref, total = strat_only_regu(
-        n_dims, test_size, y_matrix, H_train,
-        model.A, model.B, model.C, model.G, initial_capital/test_size
+        n_dims=n_dims,
+        test_size=test_size,
+        y=y_matrix,
+        H_train=H_train,
+        A=model.A,
+        B=model.B,
+        C=model.C,
+        G=model.G,
+        regu=initial_capital/test_size
     )
+    # 6️⃣ Sauvegarde dans un fichier NPZ
+    save_path = "backtest_results.npz"
+    np.savez_compressed(
+        save_path,
+        tickers=tickers,
+        n_dims=n_dims,
+        y=y_matrix,
+        z=z_matrix,
+        test_size=test_size,
+        H_train=H_train,
+        C=model.C,
+        A=model.A,
+        B=model.B,
+        G=model.G,
+        initial_capital=initial_capital,
+        start_date=start_date,
+        end_date=end_date,
+        allin_opt=allin_opt,
+        allin_opt_puis_frais=allin_opt_puis_frais,
+        allin_opt_avec_frais=allin_opt_avec_frais,
+        allin_ref=allin_ref,
 
+        regu_opt=regu_opt,
+        regu_opt_puis_frais=regu_opt_puis_frais,
+        regu_opt_avec_frais=regu_opt_avec_frais,
+        regu_ref=regu_ref,
+
+        only_regu_opt=only_regu_opt,
+        only_regu_opt_puis_frais=only_regu_opt_puis_frais,
+        only_regu_opt_avec_frais=only_regu_opt_avec_frais,
+        only_regu_ref=only_regu_ref,
+    )
+    
+    st.success(f"Results saved in {save_path}")
+    st.download_button("Download npz file if needed", data=open(save_path, "rb"), file_name=save_path)
     st.success(TEXT[lang]["backtest_done"])
 
 # -------------------------
