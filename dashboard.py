@@ -177,7 +177,7 @@ except FileNotFoundError:
     tickers         = _default_tickers
     n_dims          = _default_n_dims
     y               = np.array([])
-    test_size       = 0
+    test_size       = 0.1
     H_train         = []
     C = A = B = G   = np.eye(_default_n_dims)
     initial_capital = _default_capital
