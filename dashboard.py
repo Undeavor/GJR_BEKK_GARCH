@@ -317,7 +317,7 @@ if train_button:
     
     st.success(f"Results saved in {save_path}")
     st.download_button("Download npz file if needed", data=open(save_path, "rb"), file_name=save_path)
-    st.success(TEXT[lang]["backtest_done"])
+    st.success(TEXT[lang]["training_done"])
 
 # -------------------------
 # BACKTEST DISPLAY
