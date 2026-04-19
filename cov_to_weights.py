@@ -8,16 +8,6 @@ RF_ANNUAL_LOG = np.log(1 + 0.03)
 N_TRADING_DAYS = 252
 RF_DAILY_LOG = RF_ANNUAL_LOG / N_TRADING_DAYS
 
-# Taux de frais réels appliqués au portefeuille (coût broker)
-FRAIS_ALLIN = 0.005   # 0.50% — investissement unique, frais standard
-FRAIS_REGU  = 0.001   # 0.10% — injections régulières, frais réduits
-
-# Pénalité de turnover dans l'optimiseur (doit être << frais réels pour ne pas
-# neutraliser le signal μ journalier ~1e-4). On utilise 1 bp (0.01%) :
-# assez pour lisser le turnover sans écraser le signal.
-LAMBDA_TC_ALLIN = 1e-4
-LAMBDA_TC_REGU  = 5e-5
-
 
 def realized_sharpe_from_portfolio_values(portfolio_values, rf_log=RF_DAILY_LOG):
     portfolio_values = np.array(portfolio_values)
@@ -56,7 +46,7 @@ def optimal_sharpe_weights(mu, Sigma, prev_weights=None, lambda_tc=0.0):
         turnover_penalty = lambda_tc * cp.norm1(w - prev_weights)
 
     objective = cp.Maximize(mu @ w - 0.5 * risk - turnover_penalty)
-    constraints = [cp.sum(w) == 1, w >= 0, w <= 1]
+    constraints = [cp.sum(w) == 1, w >= -1, w <= 1]
 
     prob = cp.Problem(objective, constraints)
     prob.solve(solver=cp.OSQP)
@@ -82,7 +72,7 @@ def strat_all_in(n_dims, test_size, y, H_train, A, B, C, G, initial_cash):
     w_prev_brut = np.ones(n_dims) / n_dims
     w_prev_opti = np.ones(n_dims) / n_dims
     w_ref = np.ones(n_dims) / n_dims
-    frais_taux = FRAIS_ALLIN
+    frais_taux = 0.005
 
     for i in range(test_size):
         epsilon = y[i - test_size - 1]
@@ -95,10 +85,10 @@ def strat_all_in(n_dims, test_size, y, H_train, A, B, C, G, initial_cash):
 
         mu_next = predict_next_returns_from_returns(y[:i - test_size])
 
-        w_sans   = optimal_sharpe_weights(mu_next, H_new)
+        w_sans = optimal_sharpe_weights(mu_next, H_new)
         w_opti_w = optimal_sharpe_weights(mu_next, H_new,
                                           prev_weights=w_prev_opti,
-                                          lambda_tc=LAMBDA_TC_ALLIN)
+                                          lambda_tc=frais_taux)
 
         market_returns = np.exp(y[i - test_size])
 
@@ -146,7 +136,7 @@ def strat_regu(n_dims, test_size, y, H_train, A, B, C, G, regu_amount):
     w_prev_brut = np.zeros(n_dims)
     w_prev_opti = np.zeros(n_dims)
     w_ref = np.ones(n_dims) / n_dims
-    frais_taux = FRAIS_REGU
+    frais_taux = 0.001
 
     for i in range(test_size):
         epsilon = y[i - test_size - 1]
@@ -163,7 +153,7 @@ def strat_regu(n_dims, test_size, y, H_train, A, B, C, G, regu_amount):
         w_sans   = optimal_sharpe_weights(mu_next, H_new)
         w_opti_w = optimal_sharpe_weights(mu_next, H_new,
                                           prev_weights=w_prev_opti,
-                                          lambda_tc=LAMBDA_TC_REGU)
+                                          lambda_tc=frais_taux)
 
         val_avant_sans = sans_frais[-1] + regu_amount
         val_avant_brut = brut[-1]       + regu_amount
@@ -214,7 +204,7 @@ def strat_only_regu(n_dims, test_size, y, H_train, A, B, C, G, regu_amount):
     w_prev_brut = np.zeros(n_dims)
     w_prev_opti = np.zeros(n_dims)
     w_ref = np.ones(n_dims) / n_dims
-    frais_taux = FRAIS_REGU
+    frais_taux = 0.001
 
     for i in range(test_size):
         epsilon = y[i - test_size - 1]
