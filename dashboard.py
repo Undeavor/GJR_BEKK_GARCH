@@ -177,7 +177,7 @@ except FileNotFoundError:
     tickers         = _default_tickers
     n_dims          = _default_n_dims
     y               = np.array([])
-    test_size       = 0.1
+    test_size       = 100
     H_train         = []
     C = A = B = G   = np.eye(_default_n_dims)
     initial_capital = _default_capital
@@ -263,28 +263,56 @@ if train_button:
     with st.spinner(TEXT[lang]["data_loading"]):
         data = yf.download(tickers, start=start_date, end=end_date,
                            auto_adjust=True)["Close"]
+        # Gestion du cas mono-ticker (DataFrame → Series → reshape)
+        if isinstance(data, pd.Series):
+            data = data.to_frame()
         y_df     = np.log(data).diff().dropna()
         y_matrix = y_df.values
         test_size = int(test_ratio * len(y_matrix))
-        y_train  = y_matrix[:-test_size]
 
-    st.success(f"{TEXT[lang]['data_loaded']} : {y_train.shape[0]} obs, {n_dims} tickers")
+    # --- Validation avant tout calcul ---
+    if len(y_matrix) == 0:
+        st.error("Aucune donnée téléchargée. Vérifiez les tickers et les dates.")
+        st.stop()
+
+    if test_size == 0:
+        st.error(
+            f"test_size = 0 : le ratio {test_ratio:.0%} × {len(y_matrix)} observations "
+            f"= 0 jours de test. Augmentez le ratio ou élargissez la plage de dates."
+        )
+        st.stop()
+
+    # BUG FIX : y_matrix[:-0] == y_matrix[:0] == [] en numpy/Python
+    #           On utilise un slice explicite avec test_size > 0 garanti
+    y_train = y_matrix[: len(y_matrix) - test_size]
+
+    min_obs_required = max(50, n_dims * 10)
+    if len(y_train) < min_obs_required:
+        st.error(
+            f"Trop peu d'observations en entraînement ({len(y_train)}). "
+            f"Minimum requis : {min_obs_required}. Élargissez la plage de dates."
+        )
+        st.stop()
+
+    st.success(f"{TEXT[lang]['data_loaded']} : {len(y_train)} train + {test_size} test, {n_dims} tickers")
 
     with st.spinner(TEXT[lang]["model_estimation"]):
-        result = fit_bekk_gjr(y_train, n_dims)
-        model  = MGARCH_GJR.from_params(result.x, n_dims)
-        H_train_list = list(
-            compute_bekk_gjr_covariances(y_train, model.C, model.A, model.B, model.G)
-        )
+        try:
+            result = fit_bekk_gjr(y_train, n_dims)
+            model  = MGARCH_GJR.from_params(result.x, n_dims)
+            H_train_list = list(
+                compute_bekk_gjr_covariances(y_train, model.C, model.A, model.B, model.G)
+            )
+        except Exception as e:
+            st.error(f"Erreur lors de l'estimation du modèle BEKK-GJR : {e}")
+            st.stop()
 
     st.success(TEXT[lang]["model_done"])
 
-    # BUG FIX : chaque stratégie reçoit une copie fraîche de H_train
-    #           (les fonctions font elles-mêmes une copie interne, mais
-    #            on passe le même objet pour plus de clarté)
+    # BUG FIX : test_size garanti > 0 (vérifié plus haut), division sûre
+    regu_amount = initial_capital / test_size
 
     # Backtest ALL-IN
-    # BUG FIX : kwarg corrigé initial_cash= (était allin=)
     allin_opt, allin_opt_puis_frais, allin_opt_avec_frais, allin_ref = strat_all_in(
         n_dims=n_dims,
         test_size=test_size,
@@ -295,18 +323,16 @@ if train_button:
     )
 
     # Backtest REGU
-    # BUG FIX : kwarg corrigé regu_amount= (était regu=)
     regu_opt, regu_opt_puis_frais, regu_opt_avec_frais, regu_ref, _ = strat_regu(
         n_dims=n_dims,
         test_size=test_size,
         y=y_matrix,
         H_train=H_train_list,
         A=model.A, B=model.B, C=model.C, G=model.G,
-        regu_amount=initial_capital / test_size,
+        regu_amount=regu_amount,
     )
 
     # Backtest ONLYREGU
-    # BUG FIX : kwarg corrigé regu_amount= (était regu=)
     (only_regu_opt, only_regu_opt_puis_frais,
      only_regu_opt_avec_frais, only_regu_ref, _) = strat_only_regu(
         n_dims=n_dims,
@@ -314,11 +340,12 @@ if train_button:
         y=y_matrix,
         H_train=H_train_list,
         A=model.A, B=model.B, C=model.C, G=model.G,
-        regu_amount=initial_capital / test_size,
+        regu_amount=regu_amount,
     )
 
     save_path = "backtest_results.npz"
-    np.savez_compressed(
+    try:
+        np.savez_compressed(
         save_path,
         tickers=tickers,
         n_dims=n_dims,
@@ -341,11 +368,13 @@ if train_button:
         only_regu_opt_puis_frais=only_regu_opt_puis_frais,
         only_regu_opt_avec_frais=only_regu_opt_avec_frais,
         only_regu_ref=only_regu_ref,
-    )
+        )
+        st.success(f"Résultats sauvegardés dans {save_path}")
+        with open(save_path, "rb") as f:
+            st.download_button("Télécharger le fichier .npz", data=f, file_name=save_path)
+    except Exception as e:
+        st.warning(f"Sauvegarde échouée ({{e}}), résultats affichables ci-dessous.")
 
-    st.success(f"Résultats sauvegardés dans {save_path}")
-    with open(save_path, "rb") as f:
-        st.download_button("Télécharger le fichier .npz", data=f, file_name=save_path)
     st.success(TEXT[lang]["backtest_done"])
 
 # -------------------------
