@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from scipy.stats import jarque_bera, probplot
 from scipy.optimize import minimize
 from numba import njit
-from statsmodels.tsa.arima.model import ARIMA
 
 import matplotlib.pyplot as plt
 
@@ -400,7 +399,7 @@ def plot_standardized_residuals(std_residuals, syms):
 def main():
     # 8 stocks CAC40
     # Air Liquide, AXA, BNP Paribas, Carrefour, Crédit Agricole, LVMH, Safran, TotalEnergies
-    syms = sorted(['AI.PA', 'CS.PA', 'BNP.PA','CA.PA'])#'ACA.PA', 'MC.PA', 'SAF.PA', 'TTE.PA'])
+    syms = sorted(['AI.PA', 'CS.PA'])#'ACA.PA', 'MC.PA', 'SAF.PA', 'TTE.PA'])
     n_dims = len(syms)
     fit = True
     test_size = 30
@@ -415,51 +414,12 @@ def main():
     test_size = mth.floor(0.15*len(y_matrix))
 
     y_train = y_matrix[:-test_size]
-    y_test = y_matrix[-test_size:]
-    train_timestamps = timestamps[:-test_size]
-    test_timestamps = timestamps[-test_size:]
 
     result = fit_bekk_gjr(y_train, n_dims)
     model = MGARCH_GJR.from_params(result.x, n_dims)
     
     np.savez_compressed("cov_and_modelparams.npz", n_dims=n_dims,H_train=compute_bekk_gjr_covariances(y_train, model.C, model.A, model.B, model.G), y=y_matrix,test_size=test_size, C=model.C, A=model.A, B=model.B, G=model.G)
     
-    """
-    in_sample_H = model.conditional_covariances(y_train)
-
-    std_residuals = model.standardized_residuals(y_train)
-
-    #normality_tests(std_residuals, syms)
-
-    #plot_standardized_residuals(std_residuals, syms)
-
-    #plot_autocorrelation(std_residuals, syms)
-
-    T_forecast = 30
-    n_samples = 100
-    y_samples, H_samples = model.sample_forecast(y_matrix, T_forecast, n_samples)
-
-    # Visualize one dimension's paths
-    fig, axs = plt.subplots(n_dims, 1, figsize=(12, 8 * n_dims))
-
-    for i in range(n_dims):
-        lower_band = np.percentile(y_samples[:, :, i], 2.5, axis=0)
-        upper_band = np.percentile(y_samples[:, :, i], 97.5, axis=0)
-
-        axs[i].plot(train_timestamps, y_train[:, i], label="Training Data", color="black")
-        axs[i].plot(test_timestamps, y_samples[:, :, i].T, color="gray", alpha=0.1)
-        axs[i].fill_between(test_timestamps, lower_band, upper_band, color="gray", alpha=0.2)
-        axs[i].plot(test_timestamps, y_test[:, i], label="Test Data", color="blue")
-        axs[i].set_title(f"Forecasted Path for {syms[i]}")
-        axs[i].set_xlabel("Time")
-        axs[i].set_ylabel("Return")
-        axs[i].legend()
-        axs[i].grid()
-
-    plt.tight_layout()
-    plt.xlabel("Time")
-    plt.show()"""
-
 
 if __name__ == "__main__":
     main()
