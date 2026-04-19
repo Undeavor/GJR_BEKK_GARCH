@@ -46,7 +46,7 @@ def optimal_sharpe_weights(mu, Sigma, prev_weights=None, lambda_tc=0.0):
         turnover_penalty = lambda_tc * cp.norm1(w - prev_weights)
 
     objective = cp.Maximize(mu @ w - 0.5 * risk - turnover_penalty)
-    constraints = [cp.sum(w) == 1, w >= 0, w <= 1]
+    constraints = [cp.sum(w) == 1, w >= -1, w <= 1]
 
     prob = cp.Problem(objective, constraints)
     prob.solve(solver=cp.OSQP)
