@@ -232,7 +232,7 @@ with st.expander(TEXT[lang]["expander"]):
 if train_button:
 
     with st.spinner(TEXT[lang]["data_loading"]):
-        data = yf.download(tickers, start='2010-01-01', end='2025-12-06', auto_adjust=True)["Close"]
+        data = yf.download(tickers, start=start_date, end=end_date, auto_adjust=True)["Close"]
         y = np.log(data).diff().dropna()
         y_matrix = y.values
         test_size = int(test_ratio * len(y_matrix))
