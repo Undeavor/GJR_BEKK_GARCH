@@ -9,3 +9,4 @@ statsmodels
 dataclasses
 scipy
 numba
+cvxpy
