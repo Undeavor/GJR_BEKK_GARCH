@@ -49,7 +49,7 @@ TEXT = {
         "params": "Paramètres",
         "info": "Configurez les paramètres dans la barre latérale puis lancez l'entraînement et le backtest.",
         "intro": """Cette application permet de backtester des stratégies de portefeuille basées sur un modèle GJR-BEKK-GARCH estimé sur des données financières. 
-Vous pouvez comparer différentes approches d'investissement (all-in, régulier) et analyser leur performance en termes de risque et rendement. FEES=0.5%/trade, RISKFREERETURN=3%/y""",
+Vous pouvez comparer différentes approches d'investissement (all-in, régulier) et analyser leur performance en termes de risque et rendement. FEES=0.5%/trade, RISK_FREE_RETURN=3%/y""",
         "expander": "Explication des stratégies",
         "data_loading": "Téléchargement des données...",
         "model_estimation": "Estimation du modèle BEKK-GJR...",
