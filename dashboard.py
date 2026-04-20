@@ -63,6 +63,7 @@ TEXT = {
         "expander": "Explication des stratégies",
         "data_loading": "Téléchargement des données...",
         "model_estimation": "Estimation du modèle BEKK-GJR...",
+        "model_application": "Application du modèle BEKK-GJR...",
         "data_loaded": "Données téléchargées",
         "model_done": "Modèle estimé",
         "backtest_done": "Backtest terminé",
@@ -104,6 +105,7 @@ TEXT = {
         "expander": "Strategy explanation",
         "data_loading": "Downloading data...",
         "model_estimation": "Estimating BEKK-GJR model...",
+        "model_application": "Applying BEKK-GJR model...",
         "data_loaded": "Data loaded",
         "model_done": "Model estimated",
         "backtest_done": "Backtest completed",
@@ -309,71 +311,72 @@ if train_button:
 
     st.success(TEXT[lang]["model_done"])
 
-    # BUG FIX : test_size garanti > 0 (vérifié plus haut), division sûre
-    regu_amount = initial_capital / test_size
-
-    # Backtest ALL-IN
-    allin_opt, allin_opt_puis_frais, allin_opt_avec_frais, allin_ref = strat_all_in(
-        n_dims=n_dims,
-        test_size=test_size,
-        y=y_matrix,
-        H_train=H_train_list,
-        A=model.A, B=model.B, C=model.C, G=model.G,
-        initial_cash=initial_capital,
-    )
-
-    # Backtest REGU
-    regu_opt, regu_opt_puis_frais, regu_opt_avec_frais, regu_ref, _ = strat_regu(
-        n_dims=n_dims,
-        test_size=test_size,
-        y=y_matrix,
-        H_train=H_train_list,
-        A=model.A, B=model.B, C=model.C, G=model.G,
-        regu_amount=regu_amount,
-    )
-
-    # Backtest ONLYREGU
-    (only_regu_opt, only_regu_opt_puis_frais,
-     only_regu_opt_avec_frais, only_regu_ref, _) = strat_only_regu(
-        n_dims=n_dims,
-        test_size=test_size,
-        y=y_matrix,
-        H_train=H_train_list,
-        A=model.A, B=model.B, C=model.C, G=model.G,
-        regu_amount=regu_amount,
-    )
-
-    save_path = "backtest_results.npz"
-    try:
-        np.savez_compressed(
-        save_path,
-        tickers=tickers,
-        n_dims=n_dims,
-        y=y_matrix,
-        test_size=test_size,
-        H_train=H_train_list,
-        C=model.C, A=model.A, B=model.B, G=model.G,
-        initial_capital=initial_capital,
-        start_date=str(start_date),
-        end_date=str(end_date),
-        allin_opt=allin_opt,
-        allin_opt_puis_frais=allin_opt_puis_frais,
-        allin_opt_avec_frais=allin_opt_avec_frais,
-        allin_ref=allin_ref,
-        regu_opt=regu_opt,
-        regu_opt_puis_frais=regu_opt_puis_frais,
-        regu_opt_avec_frais=regu_opt_avec_frais,
-        regu_ref=regu_ref,
-        only_regu_opt=only_regu_opt,
-        only_regu_opt_puis_frais=only_regu_opt_puis_frais,
-        only_regu_opt_avec_frais=only_regu_opt_avec_frais,
-        only_regu_ref=only_regu_ref,
-        )
-        st.success(f"Résultats sauvegardés dans {save_path}")
-        with open(save_path, "rb") as f:
-            st.download_button("Télécharger le fichier .npz", data=f, file_name=save_path)
-    except Exception as e:
-        st.warning(f"Sauvegarde échouée ({{e}}), résultats affichables ci-dessous.")
+    with st.spinner(TEXT[lang]["model_application"]):
+        try:
+            # BUG FIX : test_size garanti > 0 (vérifié plus haut), division sûre
+            regu_amount = initial_capital / test_size
+        
+            # Backtest ALL-IN
+            allin_opt, allin_opt_puis_frais, allin_opt_avec_frais, allin_ref = strat_all_in(
+                n_dims=n_dims,
+                test_size=test_size,
+                y=y_matrix,
+                H_train=H_train_list,
+                A=model.A, B=model.B, C=model.C, G=model.G,
+                initial_cash=initial_capital,
+            )
+        
+            # Backtest REGU
+            regu_opt, regu_opt_puis_frais, regu_opt_avec_frais, regu_ref, _ = strat_regu(
+                n_dims=n_dims,
+                test_size=test_size,
+                y=y_matrix,
+                H_train=H_train_list,
+                A=model.A, B=model.B, C=model.C, G=model.G,
+                regu_amount=regu_amount,
+            )
+        
+            # Backtest ONLYREGU
+            (only_regu_opt, only_regu_opt_puis_frais,
+             only_regu_opt_avec_frais, only_regu_ref, _) = strat_only_regu(
+                n_dims=n_dims,
+                test_size=test_size,
+                y=y_matrix,
+                H_train=H_train_list,
+                A=model.A, B=model.B, C=model.C, G=model.G,
+                regu_amount=regu_amount,
+            )
+        
+            save_path = "backtest_results.npz"
+            np.savez_compressed(
+            save_path,
+            tickers=tickers,
+            n_dims=n_dims,
+            y=y_matrix,
+            test_size=test_size,
+            H_train=H_train_list,
+            C=model.C, A=model.A, B=model.B, G=model.G,
+            initial_capital=initial_capital,
+            start_date=str(start_date),
+            end_date=str(end_date),
+            allin_opt=allin_opt,
+            allin_opt_puis_frais=allin_opt_puis_frais,
+            allin_opt_avec_frais=allin_opt_avec_frais,
+            allin_ref=allin_ref,
+            regu_opt=regu_opt,
+            regu_opt_puis_frais=regu_opt_puis_frais,
+            regu_opt_avec_frais=regu_opt_avec_frais,
+            regu_ref=regu_ref,
+            only_regu_opt=only_regu_opt,
+            only_regu_opt_puis_frais=only_regu_opt_puis_frais,
+            only_regu_opt_avec_frais=only_regu_opt_avec_frais,
+            only_regu_ref=only_regu_ref,
+            )
+            st.success(f"Résultats sauvegardés dans {save_path}")
+            with open(save_path, "rb") as f:
+                st.download_button("Télécharger le fichier .npz", data=f, file_name=save_path)
+        except Exception as e:
+            st.warning(f"Sauvegarde échouée ({{e}}), résultats affichables ci-dessous.")
 
     st.success(TEXT[lang]["backtest_done"])
 
