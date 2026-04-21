@@ -57,8 +57,8 @@ TEXT = {
         "intro": (
             "Cette application permet de backtester des stratégies de portefeuille basées sur un modèle "
             "GJR-BEKK-GARCH estimé sur des données financières. "
-            "Vous pouvez comparer différentes approches d'investissement (all-in, régulier) "
-            "et analyser leur performance en termes de risque et rendement."
+            "Vous pouvez comparer différentes approches d'investissement (all-in, régulier) et analyser leur performance en termes de risque et rendement."
+            "Frais = 0.5%/trade et Taux sans Risque = 3%/an"
         ),
         "expander": "Explication des stratégies",
         "data_loading": "Téléchargement des données...",
@@ -101,6 +101,7 @@ TEXT = {
             "estimated from financial data. "
             "You can compare different investment approaches (all-in, periodic) "
             "and analyze their performance in terms of risk and return."
+            "Fees = 0.5%/trade et Risk free return = 3%/year"
         ),
         "expander": "Strategy explanation",
         "data_loading": "Downloading data...",
