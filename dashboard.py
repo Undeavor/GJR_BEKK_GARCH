@@ -394,6 +394,7 @@ if backtest_button:
     else:
         st.header(TEXT[lang]["results"])
         st.header(f"Dates Backtest: {pd.to_datetime(backtest_start_date).date()} -> {pd.to_datetime(end_date).date()}")
+        st.subheader(f"Tickers : {', '.join(tickers)}")
         fig, ax = plt.subplots(figsize=(10, 6))
 
         if strategie == "allin":
