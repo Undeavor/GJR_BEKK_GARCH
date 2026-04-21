@@ -373,7 +373,7 @@ if train_button:
             only_regu_opt_avec_frais=only_regu_opt_avec_frais,
             only_regu_ref=only_regu_ref,
             )
-            st.success(f"Résultats sauvegardés dans {save_path}")
+            #st.success(f"Résultats sauvegardés dans {save_path}")
             #with open(save_path, "rb") as f:
             #    st.download_button("Télécharger le fichier .npz", data=f, file_name=save_path)
         except Exception as e:
