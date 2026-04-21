@@ -228,8 +228,8 @@ with st.sidebar:
         value=float(test_size) / len(y) if len(y) > 0 else _default_test_ratio,
     )
 
-    start_date = st.date_input(TEXT[lang]["start"],value=start_date,min_value=pd.Timestamp("1900-01-01"),max_value=pd.Timestamp("2100-12-31") )
-    end_date = st.date_input(TEXT[lang]["end"],value=end_date,min_value=pd.Timestamp("1900-01-01"),max_value=pd.Timestamp("2100-12-31") )
+    start_date = st.date_input(TEXT[lang]["start"],value=start_date,min_value=pd.Timestamp("1900-01-01"),max_value=pd.Timestamp("2010-12-31") )
+    end_date = st.date_input(TEXT[lang]["end"],value=end_date,min_value=pd.Timestamp("1900-01-01"),max_value=pd.Timestamp("2026-12-31") )
 
     strategie = st.selectbox(
         TEXT[lang]["strategy"],
