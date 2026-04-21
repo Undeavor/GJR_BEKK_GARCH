@@ -240,9 +240,3 @@ streamlit run dashboard.py
 | `cvxpy` | Optimisation convexe du portefeuille |
 | `matplotlib` / `plotly` | Visualisation |
 | `streamlit` | Dashboard interactif |
-
----
-
-## Licence
-
-MIT — voir `LICENSE` pour les détails.
