@@ -359,6 +359,7 @@ if train_button:
             C=model.C, A=model.A, B=model.B, G=model.G,
             initial_capital=initial_capital,
             start_date=str(start_date),
+            backtest_start_date=str(y_df.index[-test_size]),
             end_date=str(end_date),
             allin_opt=allin_opt,
             allin_opt_puis_frais=allin_opt_puis_frais,
