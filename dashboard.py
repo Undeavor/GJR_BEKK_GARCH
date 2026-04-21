@@ -393,7 +393,7 @@ if backtest_button:
         st.error(TEXT[lang]["no_file"])
     else:
         st.header(TEXT[lang]["results"])
-        st.header(f"Dates Backtest: {pd.to_datetime(backtest_start_date).date()} -> {pd.to_datetime(end_date).date()}")
+        st.subheader(f"Dates Backtest: {pd.to_datetime(backtest_start_date).date()} -> {pd.to_datetime(end_date).date()}")
         st.subheader(f"Tickers : {', '.join(tickers)}")
         fig, ax = plt.subplots(figsize=(10, 6))
 
