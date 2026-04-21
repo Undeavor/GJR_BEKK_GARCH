@@ -390,6 +390,7 @@ if backtest_button:
         st.error(TEXT[lang]["no_file"])
     else:
         st.header(TEXT[lang]["results"])
+        st.header(f"Dates Backtest: {start_date} -> {end_date}")
         fig, ax = plt.subplots(figsize=(10, 6))
 
         if strategie == "allin":
