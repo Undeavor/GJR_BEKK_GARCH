@@ -156,6 +156,7 @@ try:
     G              = backtest["G"]
     initial_capital = float(backtest["initial_capital"])
     start_date     = pd.to_datetime(str(backtest["start_date"]))
+    backtest_start_date = pd.to_datetime(str(backtest["backtest_start_date"]))
     end_date       = pd.to_datetime(str(backtest["end_date"]))
 
     allin_opt            = backtest["allin_opt"]
@@ -269,7 +270,8 @@ if train_button:
         # Gestion du cas mono-ticker (DataFrame → Series → reshape)
         if isinstance(data, pd.Series):
             data = data.to_frame()
-        y_df     = np.log(data).diff().dropna()
+        y_df = np.log(data).diff().dropna()
+        backtest_start_date = y_df.index[-test_size]
         y_matrix = y_df.values
         test_size = int(test_ratio * len(y_matrix))
 
