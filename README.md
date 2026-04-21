@@ -1,32 +1,32 @@
-# 📈 Multi-Asset Portfolio Optimization: MGARCH-GJR + VAR
+# 📈 Optimisation de Portefeuille Multi-Actifs : MGARCH-GJR + VAR
 
-A complete quantitative portfolio optimization pipeline combining **multivariate GARCH with leverage effects (BEKK-GJR)** for dynamic covariance modeling and a **Vector Autoregression (VAR)** model for return forecasting — applied to CAC 40 and other equities.
+Un pipeline complet d'optimisation quantitative de portefeuille combinant le modèle **GARCH multivarié avec effets de levier (BEKK-GJR)** pour la modélisation dynamique des covariances et un modèle **VAR (Vector Autoregression)** pour la prévision des rendements — appliqué aux actions du CAC 40 et à d'autres marchés.
 
 ---
 
-## Table of Contents
+## Table des matières
 
-- [Overview](#overview)
+- [Vue d'ensemble](#vue-densemble)
 - [Architecture](#architecture)
-- [Theoretical Background](#theoretical-background)
-- [Backtest Strategies](#backtest-strategies)
-- [Project Files](#project-files)
+- [Fondements théoriques](#fondements-théoriques)
+- [Stratégies de backtest](#stratégies-de-backtest)
+- [Fichiers du projet](#fichiers-du-projet)
 - [Installation](#installation)
-- [Usage](#usage)
-- [Interactive Dashboard](#interactive-dashboard)
-- [Output Files](#output-files)
-- [Dependencies](#dependencies)
+- [Utilisation](#utilisation)
+- [Dashboard interactif](#dashboard-interactif)
+- [Fichiers générés](#fichiers-générés)
+- [Dépendances](#dépendances)
 
 ---
 
-## Overview
+## Vue d'ensemble
 
-This project implements an end-to-end pipeline for dynamic portfolio construction:
+Ce projet implémente un pipeline de bout en bout pour la construction dynamique de portefeuille :
 
-1. **Covariance modeling** via BEKK-GJR(1,1) — a multivariate GARCH model that captures time-varying volatility, cross-asset correlation dynamics, and asymmetric leverage effects (negative shocks have a stronger impact than positive ones).
-2. **Return forecasting** via a VAR model estimated at each rebalancing step.
-3. **Portfolio optimization** by maximizing the Sharpe ratio subject to allocation constraints, with optional L1 transaction cost penalization.
-4. **Three backtest strategies** that simulate realistic investment scenarios — all-in, DCA with full rebalancing, and DCA with fractional rebalancing.
+1. **Modélisation des covariances** via BEKK-GJR(1,1) — un modèle GARCH multivarié capturant la volatilité conditionnelle, les corrélations dynamiques entre actifs et l'asymétrie due à l'effet de levier (les chocs négatifs ont un impact plus fort que les positifs).
+2. **Prévision des rendements** via un modèle VAR estimé à chaque pas de rééquilibrage.
+3. **Optimisation du portefeuille** en maximisant le ratio de Sharpe sous contraintes d'allocation, avec pénalisation L1 optionnelle des coûts de transaction.
+4. **Trois stratégies de backtest** simulant des scénarios d'investissement réalistes : all-in, DCA avec rééquilibrage total, et DCA avec rééquilibrage partiel.
 
 ---
 
@@ -37,164 +37,164 @@ raw_to_data.py              →  data.npz
         ↓
 data_to_cov_and_returns.py  →  cov_and_modelparams.npz
         ↓
-cov_to_weights.py           →  backtest plots + metrics
+cov_to_weights.py           →  graphiques + métriques
         ↑
-   dashboard.py (Streamlit UI wrapping the whole pipeline)
+   dashboard.py  (interface Streamlit encapsulant le pipeline)
 ```
 
-| Module | Role |
+| Module | Rôle |
 |---|---|
-| `raw_to_data.py` | Download historical price data via `yfinance` and save log-returns |
-| `data_to_cov_and_returns.py` | Fit BEKK-GJR(1,1) via MLE, compute conditional covariances, export model params |
-| `cov_to_weights.py` | Run backtests using forecasted covariances + VAR returns, compute Sharpe ratios |
-| `dashboard.py` | Streamlit interactive interface to configure and visualize all strategies |
-| `yfinance_tickers.py` | Curated ticker dictionary (CAC 40, US large-cap, ETFs, crypto, indices) |
+| `raw_to_data.py` | Téléchargement des données de prix via `yfinance`, sauvegarde des log-rendements |
+| `data_to_cov_and_returns.py` | Estimation BEKK-GJR(1,1) par MV, calcul des covariances conditionnelles, export des paramètres |
+| `cov_to_weights.py` | Backtests avec covariances prévues + rendements VAR, calcul des ratios de Sharpe |
+| `dashboard.py` | Interface Streamlit pour configurer et visualiser toutes les stratégies |
+| `yfinance_tickers.py` | Dictionnaire de tickers (CAC 40, grandes capitalisations US, ETFs, crypto, indices) |
 
 ---
 
-## Theoretical Background
+## Fondements théoriques
 
-### Volatility Model: BEKK-GJR(1,1)
+### Modèle de volatilité : BEKK-GJR(1,1)
 
-The model captures the full joint conditional covariance matrix $H_t$ at each time step:
+Le modèle capture la matrice de covariance conditionnelle jointe $H_t$ à chaque instant :
 
 $$H_t = CC^\top + A^\top \varepsilon_{t-1}\varepsilon_{t-1}^\top A + B^\top H_{t-1} B + G^\top \left(\varepsilon_{t-1}\varepsilon_{t-1}^\top \odot \mathbf{1}_{\varepsilon_{t-1}<0}\right) G$$
 
-- **$CC^\top$** — unconditional baseline covariance (positive semi-definite by construction)
-- **$A^\top \varepsilon\varepsilon^\top A$** — ARCH term: reaction to recent squared innovations
-- **$B^\top H_{t-1} B$** — GARCH term: persistence of past volatility
-- **$G^\top (\ldots) G$** — GJR asymmetry term: amplified response to negative shocks (leverage effect)
+- **$CC^\top$** — covariance inconditionnelle de base (semi-définie positive par construction)
+- **$A^\top \varepsilon\varepsilon^\top A$** — terme ARCH : réaction aux innovations récentes au carré
+- **$B^\top H_{t-1} B$** — terme GARCH : persistance de la volatilité passée
+- **$G^\top (\ldots) G$** — terme d'asymétrie GJR : réponse amplifiée aux chocs négatifs (effet de levier)
 
-Parameters are estimated by **maximum log-likelihood**, accelerated with `numba` JIT compilation.
+Les paramètres sont estimés par **maximum de log-vraisemblance**, accéléré par la compilation JIT `numba`.
 
-### Return Forecasting: VAR(p)
+### Prévision des rendements : VAR(p)
 
-At each rebalancing step, a VAR model of order $p=3$ is fitted on the available in-sample log-returns. The one-step-ahead forecast $\hat{\mu}_{t+1}$ is used as the expected return vector for portfolio optimization.
+À chaque étape de rééquilibrage, un modèle VAR d'ordre $p=3$ est estimé sur les log-rendements disponibles en échantillon. La prévision à un pas $\hat{\mu}_{t+1}$ est utilisée comme vecteur de rendements espérés pour l'optimisation.
 
-### Portfolio Optimization
+### Optimisation du portefeuille
 
-Given $\hat{\mu}_{t+1}$ and $H_t$, portfolio weights $w$ are found by solving:
+Étant donnés $\hat{\mu}_{t+1}$ et $H_t$, les poids $w$ sont obtenus en résolvant :
 
 $$\max_w \quad \hat{\mu}_{t+1}^\top w - \frac{1}{2} w^\top H_t w - \lambda_{tc} \|w - w_{t-1}\|_1$$
 
-subject to:
+sous les contraintes :
 $$\sum_i w_i = 1, \quad -1 \leq w_i \leq 1 \quad \forall i$$
 
-The L1 penalty $\lambda_{tc}$ penalizes large portfolio turnover, directly reflecting transaction costs. Solved via `cvxpy` with the OSQP solver.
+La pénalité L1 $\lambda_{tc}$ pénalise le turnover excessif, reflétant directement les coûts de courtage. Le problème est résolu via `cvxpy` avec le solveur OSQP.
 
-### Performance Metric: Realized Sharpe Ratio
+### Métrique de performance : Ratio de Sharpe réalisé
 
 $$\text{Sharpe} = \sqrt{252} \cdot \frac{\bar{r}_e}{\sigma_e}$$
 
-where $r_e = r_t - r_f$ are excess daily returns over the risk-free rate (3% annually).
+où $r_e = r_t - r_f$ sont les rendements journaliers excédentaires par rapport au taux sans risque (3% annualisé).
 
 ---
 
-## Backtest Strategies
+## Stratégies de backtest
 
-| Strategy | Description | Transaction Costs |
+| Stratégie | Description | Frais de transaction |
 |---|---|---|
-| **All-In** | Full capital invested on day 1, daily rebalancing with optimal weights | Simulated at 0.5% per unit of turnover |
-| **Regu (DCA)** | Fixed periodic contribution, full portfolio rebalanced each period | 0.1% per unit of turnover |
-| **OnlyRegu** | Fixed periodic contribution, only new cash is allocated optimally; existing holdings left untouched | 0.1% only on new cash |
-| **1/n (Benchmark)** | Equal-weight portfolio, no rebalancing | None |
+| **All-In** | Capital total investi au jour 1, rééquilibrage quotidien avec poids optimaux | 0,5% par unité de turnover |
+| **Regu (DCA)** | Versement périodique fixe, portefeuille entier rééquilibré à chaque période | 0,1% par unité de turnover |
+| **OnlyRegu** | Versement périodique fixe, seul le nouveau cash est alloué de manière optimale ; l'encours existant n'est pas touché | 0,1% uniquement sur le nouveau cash |
+| **1/n (Référence)** | Portefeuille équipondéré, sans rééquilibrage | Aucun |
 
-Each strategy produces four portfolio value series:
-- **Sans frais** — no transaction costs (theoretical upper bound)
-- **Avec frais (Brut)** — costs applied to unconstrained weights
-- **Avec frais (Optimisé)** — costs applied to turnover-penalized weights
-- **1/n** — equal-weight benchmark
+Chaque stratégie produit quatre séries de valeurs de portefeuille :
+- **Sans frais** — borne théorique haute, sans coûts de transaction
+- **Avec frais (Brut)** — frais appliqués aux poids non contraints
+- **Avec frais (Optimisé)** — frais appliqués aux poids pénalisés par le turnover
+- **1/n** — benchmark équipondéré
 
 ---
 
-## Project Files
+## Fichiers du projet
 
 ```
 .
-├── raw_to_data.py                # Step 1: download price data
-├── data_to_cov_and_returns.py    # Step 2: fit BEKK-GJR model
-├── cov_to_weights.py             # Step 3: backtest strategies
-├── dashboard.py                  # Streamlit UI
-├── yfinance_tickers.py           # Ticker reference dictionary
-├── requirements.txt              # Python dependencies
-├── data.npz                      # (generated) raw price data
-├── cov_and_modelparams.npz       # (generated) model params + covariances
-└── backtest_results.npz          # (generated) backtest portfolio values
+├── raw_to_data.py                # Étape 1 : téléchargement des données de prix
+├── data_to_cov_and_returns.py    # Étape 2 : estimation du modèle BEKK-GJR
+├── cov_to_weights.py             # Étape 3 : backtests des stratégies
+├── dashboard.py                  # Interface Streamlit
+├── yfinance_tickers.py           # Dictionnaire de référence des tickers
+├── requirements.txt              # Dépendances Python
+├── data.npz                      # (généré) données de prix brutes
+├── cov_and_modelparams.npz       # (généré) paramètres du modèle + covariances
+└── backtest_results.npz          # (généré) valeurs de portefeuille des backtests
 ```
 
 ---
 
 ## Installation
 
-**Python 3.9+ recommended.**
+**Python 3.9+ recommandé.**
 
 ```bash
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/votre-utilisateur/votre-repo.git
+cd votre-repo
 pip install -r requirements.txt
 ```
 
-Full dependency list:
+Liste complète des dépendances :
 
 ```
 numpy pandas matplotlib yfinance scipy statsmodels numba cvxpy streamlit plotly
 ```
 
-> **Note on `numba`:** The first run will trigger JIT compilation of the GARCH likelihood functions, which may take 30–60 seconds. Subsequent runs are significantly faster.
+> **Note sur `numba` :** La première exécution déclenchera la compilation JIT des fonctions de vraisemblance GARCH, ce qui peut prendre 30 à 60 secondes. Les exécutions suivantes sont nettement plus rapides.
 
 ---
 
-## Usage
+## Utilisation
 
-### Step 1 — Download price data
+### Étape 1 — Télécharger les données de prix
 
 ```bash
 python raw_to_data.py
 ```
 
-Fetches daily closing prices for 18 CAC 40 tickers from Yahoo Finance (2010–2025) and saves them to `data.npz`. Edit the `syms` list in the script to change the asset universe.
+Télécharge les cours de clôture journaliers de 18 tickers du CAC 40 depuis Yahoo Finance (2010–2025) et les sauvegarde dans `data.npz`. Modifiez la liste `syms` dans le script pour changer l'univers d'actifs.
 
-### Step 2 — Fit the BEKK-GJR model
+### Étape 2 — Estimer le modèle BEKK-GJR
 
 ```bash
 python data_to_cov_and_returns.py
 ```
 
-Fits the BEKK-GJR(1,1) model via MLE on the training set (85% of data). Saves model parameters $(C, A, B, G)$, conditional covariance matrices, and the full return series to `cov_and_modelparams.npz`.
+Estime le modèle BEKK-GJR(1,1) par maximum de vraisemblance sur l'échantillon d'entraînement (85% des données). Sauvegarde les paramètres du modèle $(C, A, B, G)$, les matrices de covariance conditionnelles et la série complète des rendements dans `cov_and_modelparams.npz`.
 
-> This step is computationally intensive. Estimated runtime: **5–30 minutes** depending on the number of assets and available hardware.
+> Cette étape est coûteuse en calcul. Durée estimée : **5 à 30 minutes** selon le nombre d'actifs et le matériel disponible.
 
-### Step 3 — Run backtest
+### Étape 3 — Lancer le backtest
 
 ```bash
 python cov_to_weights.py
 ```
 
-Prompts you to choose a strategy:
+Le script vous invite à choisir une stratégie :
 
 ```
 Stratégie (allin/regu/onlyregu) :
 ```
 
-Outputs a matplotlib chart of portfolio values over the test period, with realized Sharpe ratios in the legend.
+Génère un graphique matplotlib des valeurs de portefeuille sur la période de test, avec les ratios de Sharpe réalisés affichés dans la légende.
 
 ---
 
-## Interactive Dashboard
+## Dashboard interactif
 
-A hosted Streamlit app is available at:
+Une application Streamlit hébergée est disponible à l'adresse :
 
 ```
 https://projetetude28.streamlit.app/
 ```
 
-The dashboard allows you to:
-- Select tickers from the full `yfinance_tickers.py` dictionary (CAC 40, US stocks, ETFs, crypto…)
-- Set the initial capital and DCA contribution amount
-- Choose the backtest strategy
-- Visualize portfolio evolution and compare Sharpe ratios in real time
+Le dashboard permet de :
+- Sélectionner des tickers depuis le dictionnaire complet de `yfinance_tickers.py` (CAC 40, actions US, ETFs, crypto…)
+- Définir le capital initial et le montant de versement périodique (DCA)
+- Choisir la stratégie de backtest
+- Visualiser l'évolution du portefeuille et comparer les ratios de Sharpe en temps réel
 
-To run locally:
+Pour lancer le dashboard en local :
 
 ```bash
 streamlit run dashboard.py
@@ -202,47 +202,47 @@ streamlit run dashboard.py
 
 ---
 
-## Output Files
+## Fichiers générés
 
-| File | Content |
+| Fichier | Contenu |
 |---|---|
-| `data.npz` | `data` (DataFrame), `n_dims` |
+| `data.npz` | `data` (prix de clôture), `n_dims` |
 | `cov_and_modelparams.npz` | `y`, `test_size`, `A`, `B`, `C`, `G`, `H_train`, `n_dims` |
-| `backtest_results.npz` | Portfolio value arrays for each strategy and variant |
+| `backtest_results.npz` | Tableaux de valeurs de portefeuille pour chaque stratégie et variante |
 
 ---
 
-## Supported Asset Universes
+## Univers d'actifs supportés
 
-`yfinance_tickers.py` provides ready-to-use ticker dictionaries for:
+`yfinance_tickers.py` fournit des dictionnaires de tickers prêts à l'emploi :
 
-| Universe | Examples |
+| Univers | Exemples |
 |---|---|
 | CAC 40 | `AI.PA`, `MC.PA`, `BNP.PA`, `SAN.PA`, … |
-| US Large Cap | `AAPL`, `MSFT`, `NVDA`, `JPM`, … |
-| US ETFs | `SPY`, `QQQ`, `TLT`, `GLD`, … |
+| Grandes cap. US | `AAPL`, `MSFT`, `NVDA`, `JPM`, … |
+| ETFs US | `SPY`, `QQQ`, `TLT`, `GLD`, … |
 | Europe | `ULVR.L`, `VOW3.DE`, `SAP.DE`, … |
-| Crypto | `BTC-USD`, `ETH-USD`, `SOL-USD`, … |
+| Cryptomonnaies | `BTC-USD`, `ETH-USD`, `SOL-USD`, … |
 | Indices | `^GSPC`, `^FCHI`, `^GDAXI`, … |
 
 ---
 
-## Dependencies
+## Dépendances
 
-| Package | Role |
+| Package | Rôle |
 |---|---|
-| `numpy` | Numerical computation |
-| `pandas` | Data manipulation |
-| `yfinance` | Historical price download |
-| `scipy` | MLE optimization |
-| `numba` | JIT-compiled GARCH likelihood |
-| `statsmodels` | VAR model estimation |
-| `cvxpy` | Convex portfolio optimization |
-| `matplotlib` / `plotly` | Visualization |
-| `streamlit` | Interactive dashboard |
+| `numpy` | Calcul numérique |
+| `pandas` | Manipulation des données |
+| `yfinance` | Téléchargement des données historiques |
+| `scipy` | Optimisation MLE |
+| `numba` | Compilation JIT de la vraisemblance GARCH |
+| `statsmodels` | Estimation du modèle VAR |
+| `cvxpy` | Optimisation convexe du portefeuille |
+| `matplotlib` / `plotly` | Visualisation |
+| `streamlit` | Dashboard interactif |
 
 ---
 
-## License
+## Licence
 
-MIT — see `LICENSE` for details.
+MIT — voir `LICENSE` pour les détails.
